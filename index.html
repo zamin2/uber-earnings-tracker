@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06c167">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Uber Eats Tracker</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--text:#14171c;--mute:#6b7380;--line:#e3e7ec;--accent:#06c167;--neg:#d93a3a;--input:#eef6ff}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#1a1d24;--text:#eef0f3;--mute:#8d96a3;--line:#2a2f38;--input:#1b2735}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,sans-serif;padding-bottom:76px}
+header small{display:block;font-weight:400;font-size:13px;opacity:.9}
+header{background:var(--accent);color:#fff;padding:14px 16px;font-weight:700;font-size:18px;position:sticky;top:0;z-index:5}
+main{padding:12px 16px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+input{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--text);font-size:16px}
+.row{display:flex;gap:10px}.row>div{flex:1}
+button{font:inherit;border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:#fff;font-weight:600}
+button.sec{background:var(--line);color:var(--text)}
+button.full{width:100%;margin-top:14px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--mute);border-radius:0;padding:14px 4px;font-size:14px}
+nav button.on{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;background:var(--line);color:var(--text);padding:9px 4px;font-size:14px}
+.tabs button.on{background:var(--accent);color:#fff}
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;font-size:14px;color:var(--mute)}
+.calc b{display:block;color:var(--text);font-size:16px}
+.big{font-size:30px;font-weight:700}
+.pos{color:var(--accent)}.neg{color:var(--neg)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;font-size:13px;color:var(--mute)}
+.grid b{display:block;color:var(--text);font-size:15px}
+.item{padding:12px 0;border-bottom:1px solid var(--line)}
+.item .top{display:flex;justify-content:space-between;align-items:flex-start}
+.item .btns{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 20px;border-radius:24px;font-weight:600;z-index:30;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:20;padding:24px}
+.modal .box{background:var(--card);border-radius:12px;padding:18px;width:100%;max-width:340px}
+.modal .btns{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.item:last-child{border:0}
+.item small{color:var(--mute);display:block}
+.bars{display:flex;align-items:flex-end;gap:3px;height:90px;margin:10px 0 2px}
+.bars i{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
+.bars i.n{background:var(--neg)}
+.muted{color:var(--mute);font-size:13px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header><div>Uber Earnings Tracker</div><small id="title"></small></header>
+<main>
+
+<section id="v-log">
+  <div class="card">
+    <div class="row">
+      <div><label>Date *</label><input id="date" type="date"></div>
+      <div><label>Km driven *</label><input id="km" type="number" step="any" inputmode="decimal"></div>
+    </div>
+    <div class="row">
+      <div><label>Revenue ($) *</label><input id="revenue" type="number" step="any" inputmode="decimal"></div>
+      <div><label>Hours *</label><input id="hours" type="number" step="any" inputmode="decimal"></div>
+    </div>
+    <div class="row">
+      <div><label>Fuel rate ($/L) *</label><input id="fuelRate" type="number" step="any" inputmode="decimal"></div>
+      <div><label>Mileage (L/100km) *</label><input id="mileage" type="number" step="any" inputmode="decimal"></div>
+    </div>
+    <div class="row">
+      <div><label>Other cost ($)</label><input id="otherCost" type="number" step="any" inputmode="decimal"></div>
+      <div><label>Other cost description</label><input id="otherDesc" type="text"></div>
+    </div>
+    <div class="calc">
+      <div>Fuel cost<b id="c-fuel">-</b></div>
+      <div>Profit<b id="c-profit">-</b></div>
+      <div>Revenue / km<b id="c-rpk">-</b></div>
+      <div>Profit / km<b id="c-ppk">-</b></div>
+    </div>
+    <button class="full" id="save">Save</button>
+    <button class="full sec hide" id="cancel">Cancel edit</button>
+  </div>
+</section>
+
+<section id="v-entries" class="hide">
+  <div class="card" id="entries"></div>
+</section>
+
+<section id="v-reports" class="hide">
+  <div class="tabs" id="tabs">
+    <button data-p="day">Daily</button><button data-p="week">Weekly</button>
+    <button data-p="month">Monthly</button><button data-p="year">Yearly</button>
+  </div>
+  <div id="report"></div>
+</section>
+
+<section id="v-data" class="hide">
+  <div class="card">
+    <p class="muted">Data is stored only on this phone. Back it up regularly.</p>
+    <button class="full" id="exp">Export backup (JSON)</button>
+    <button class="full sec" id="expcsv">Export CSV</button>
+    <label>Import backup (JSON, merges by date)</label>
+    <input id="imp" type="file" accept=".json,application/json">
+  </div>
+</section>
+
+</main>
+<nav id="nav">
+  <button data-v="reports">Reports</button><button data-v="log">Log</button>
+  <button data-v="entries">Entries</button><button data-v="data">Backup</button>
+</nav>
+
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'eats.entries.v1';
+const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+const money = v => (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2);
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } };
+const store = list => localStorage.setItem(KEY, JSON.stringify(list));
+let entries = load();
+let editingId = null;
+let period = 'day';
+
+function today() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function fuelCost(e) { return e.km / 100 * e.mileage * e.fuelRate; }
+function profit(e) { return e.revenue - fuelCost(e) - e.otherCost; }
+
+function readForm() {
+  return {
+    date: $('date').value, km: num($('km').value), revenue: num($('revenue').value),
+    hours: num($('hours').value), fuelRate: num($('fuelRate').value), mileage: num($('mileage').value),
+    otherCost: num($('otherCost').value), otherDesc: $('otherDesc').value.trim()
+  };
+}
+function updateCalc() {
+  const e = readForm();
+  const fc = fuelCost(e), p = profit(e);
+  $('c-fuel').textContent = money(fc);
+  $('c-profit').textContent = money(p);
+  $('c-profit').className = p < 0 ? 'neg' : 'pos';
+  $('c-rpk').textContent = e.km ? money(e.revenue / e.km) : '-';
+  $('c-ppk').textContent = e.km ? money(p / e.km) : '-';
+}
+function resetForm() {
+  editingId = null;
+  ['km', 'revenue', 'hours', 'fuelRate', 'mileage', 'otherCost', 'otherDesc'].forEach(i => $(i).value = '');
+  $('date').value = today();
+  $('save').textContent = 'Save';
+  $('cancel').classList.add('hide');
+  updateCalc();
+}
+function fillForm(e) {
+  editingId = e.id;
+  $('date').value = e.date; $('km').value = e.km; $('revenue').value = e.revenue;
+  $('hours').value = e.hours || ''; $('fuelRate').value = e.fuelRate; $('mileage').value = e.mileage;
+  $('otherCost').value = e.otherCost || ''; $('otherDesc').value = e.otherDesc || '';
+  $('save').textContent = 'Update';
+  $('cancel').classList.remove('hide');
+  updateCalc();
+  show('log');
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function save() {
+  const e = readForm();
+  const required = [['date', 'Date'], ['km', 'Km driven'], ['revenue', 'Revenue'], ['hours', 'Hours'], ['fuelRate', 'Fuel rate'], ['mileage', 'Mileage']];
+  const missing = required.filter(r => $(r[0]).value.trim() === '');
+  if (missing.length) {
+    $(missing[0][0]).focus();
+    return alert('Required: ' + missing.map(r => r[1]).join(', '));
+  }
+  if (editingId) {
+    entries = entries.map(x => x.id === editingId ? { ...e, id: editingId } : x);
+  } else {
+    entries.push({ ...e, id: Date.now() + Math.random() });
+  }
+  store(entries);
+  resetForm();
+  show('entries');
+  toast('Entry saved successfully');
+}
+
+function renderEntries() {
+  const box = $('entries');
+  if (!entries.length) { box.innerHTML = '<p class="muted">No entries yet.</p>'; return; }
+  const list = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  box.innerHTML = list.map(e => {
+    const p = profit(e);
+    return `<div class="item"><div class="top"><div><b>${e.date}</b><small>${e.km} km · ${money(e.revenue)} revenue</small></div>
+      <b class="${p < 0 ? 'neg' : 'pos'}">${money(p)}</b></div>
+      <div class="btns"><button class="sec" style="padding:6px 14px" data-edit="${e.id}">Edit</button>
+      <button class="sec" style="padding:6px 14px" data-del="${e.id}">Del</button></div></div>`;
+  }).join('');
+}
+function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function bucketKey(date, p) {
+  if (p === 'day') return date;
+  const [y, m, d] = date.split('-').map(Number);
+  if (p === 'month') return y + '-' + pad(m);
+  if (p === 'year') return String(y);
+  const dt = new Date(y, m - 1, d);
+  const back = (dt.getDay() + 6) % 7;
+  dt.setDate(dt.getDate() - back);
+  return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate());
+}
+function bucketLabel(k, p) {
+  if (p === 'week') return 'Week of ' + k;
+  if (p === 'month') {
+    const [y, m] = k.split('-');
+    return new Date(y, m - 1, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  }
+  return k;
+}
+function aggregate(list) {
+  const a = { days: list.length, km: 0, revenue: 0, fuel: 0, other: 0, hours: 0 };
+  list.forEach(e => { a.km += e.km; a.revenue += e.revenue; a.fuel += fuelCost(e); a.other += e.otherCost; a.hours += e.hours; });
+  a.profit = a.revenue - a.fuel - a.other;
+  return a;
+}
+function statGrid(a, daily) {
+  const s = [
+    ...(daily ? [] : [['Days worked', a.days]]), ['Km driven', a.km.toFixed(1)],
+    ['Revenue', money(a.revenue)], ['Fuel cost', money(a.fuel)],
+    ['Other cost', money(a.other)], ...(daily ? [] : [['Avg revenue / day', money(a.days ? a.revenue / a.days : 0)]]),
+    ['Revenue / km', money(a.km ? a.revenue / a.km : 0)], ['Profit / km', money(a.km ? a.profit / a.km : 0)]
+  ];
+  s.push(['Duration (hours)', a.hours ? a.hours.toFixed(1) : '-'], ['Revenue / hour', a.hours ? money(a.revenue / a.hours) : '-'], ['Profit / hour', a.hours ? money(a.profit / a.hours) : '-']);
+  return '<div class="grid">' + s.map(x => `<div>${x[0]}<b>${x[1]}</b></div>`).join('') + '</div>';
+}
+function renderReport() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.p === period));
+  if (!entries.length) { $('report').innerHTML = '<div class="card muted">No data yet.</div>'; return; }
+  const groups = {};
+  entries.forEach(e => (groups[bucketKey(e.date, period)] ||= []).push(e));
+  const keys = Object.keys(groups).sort().reverse();
+  const rows = keys.map(k => ({ k, a: aggregate(groups[k]) }));
+  const total = aggregate(entries);
+  const recent = rows.slice(0, 14).reverse();
+  const max = Math.max(...recent.map(r => Math.abs(r.a.profit)), 1);
+  const chart = '<div class="bars">' + recent.map(r =>
+    `<i class="${r.a.profit < 0 ? 'n' : ''}" style="height:${Math.abs(r.a.profit) / max * 100}%" title="${r.k}: ${money(r.a.profit)}"></i>`).join('') + '</div>' +
+    '<div class="muted">Profit, last ' + recent.length + ' periods</div>';
+  const totalCard = `<div class="card"><div class="muted">All-time profit</div>
+    <div class="big ${total.profit < 0 ? 'neg' : 'pos'}">${money(total.profit)}</div>${chart}${statGrid(total)}</div>`;
+  $('report').innerHTML = totalCard + rows.map(r =>
+    `<div class="card"><div style="display:flex;justify-content:space-between"><b>${bucketLabel(r.k, period)}</b>
+     <b class="${r.a.profit < 0 ? 'neg' : 'pos'}">${money(r.a.profit)}</b></div>${statGrid(r.a, period === 'day')}</div>`).join('');
+}
+
+function confirmDel(cb) {
+  const m = document.createElement('div');
+  m.className = 'modal';
+  m.innerHTML = '<div class="box"><b>Delete entry?</b><p class="muted">This cannot be undone.</p><div class="btns"><button class="sec" id="dn">Cancel</button><button id="dy" style="background:var(--neg)">Delete</button></div></div>';
+  document.body.appendChild(m);
+  m.querySelector('#dn').onclick = () => m.remove();
+  m.querySelector('#dy').onclick = () => { m.remove(); cb(); };
+}
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; a.click();
+}
+function exportCsv() {
+  const head = ['Date', 'Km Driven', 'Revenue', 'Fuel Rate ($/L)', 'Mileage (L/100km)', 'Fuel Cost', 'Other Cost', 'Other Cost Description', 'Profit', 'Duration (Hours)'];
+  const lines = [...entries].sort((a, b) => a.date.localeCompare(b.date)).map(e =>
+    [e.date, e.km, e.revenue, e.fuelRate, e.mileage, fuelCost(e).toFixed(2), e.otherCost, '"' + (e.otherDesc || '').replace(/"/g, '""') + '"', profit(e).toFixed(2), e.hours || ''].join(','));
+  download('ubereats_tracker.csv', [head.join(','), ...lines].join('\n'), 'text/csv');
+}
+function importJson(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!Array.isArray(data)) throw 0;
+      let n = 0;
+      data.forEach(d => {
+        if (!d.date) return;
+        const e = { date: d.date, km: num(d.km), revenue: num(d.revenue), hours: num(d.hours), fuelRate: num(d.fuelRate), mileage: num(d.mileage), otherCost: num(d.otherCost), otherDesc: d.otherDesc || '' };
+        const i = entries.findIndex(x => x.date === e.date);
+        if (i >= 0) entries[i] = { ...e, id: entries[i].id }; else entries.push({ ...e, id: Date.now() + Math.random() });
+        n++;
+      });
+      store(entries); resetForm();
+      alert('Imported ' + n + ' entries');
+    } catch (x) { alert('Invalid file'); }
+  };
+  r.readAsText(file);
+}
+
+const titles = { reports: 'Reports', log: 'Log Day', entries: 'Entries', data: 'Backup' };
+function show(v) {
+  Object.keys(titles).forEach(k => $('v-' + k).classList.toggle('hide', k !== v));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  $('title').textContent = titles[v];
+  if (v === 'entries') renderEntries();
+  if (v === 'reports') renderReport();
+  window.scrollTo(0, 0);
+}
+
+['date', 'km', 'revenue', 'hours', 'fuelRate', 'mileage', 'otherCost', 'otherDesc'].forEach(i => $(i).addEventListener('input', updateCalc));
+$('save').onclick = save;
+$('cancel').onclick = () => { resetForm(); show('entries'); };
+$('nav').onclick = e => { const v = e.target.dataset.v; if (v) show(v); };
+$('tabs').onclick = e => { if (e.target.dataset.p) { period = e.target.dataset.p; renderReport(); } };
+$('entries').onclick = e => {
+  const ed = e.target.dataset.edit, dl = e.target.dataset.del;
+  if (ed) fillForm(entries.find(x => String(x.id) === ed));
+  if (dl) confirmDel(() => { entries = entries.filter(x => String(x.id) !== dl); store(entries); renderEntries(); });
+};
+$('exp').onclick = () => download('ubereats_backup.json', JSON.stringify(entries, null, 1), 'application/json');
+$('expcsv').onclick = exportCsv;
+$('imp').onchange = e => { if (e.target.files[0]) importJson(e.target.files[0]); e.target.value = ''; };
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+resetForm();
+show('reports');
+</script>
+</body>
+</html>
