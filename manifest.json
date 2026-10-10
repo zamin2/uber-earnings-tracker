@@ -1,6 +1,6 @@
 {
-  "name": "Uber Eats Tracker",
-  "short_name": "Eats Log",
+  "name": "Uber Earnings Tracker",
+  "short_name": "Uber Earnings Tracker",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
